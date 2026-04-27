@@ -40,16 +40,13 @@ namespace SleepDebt.Patches
                 return;
             }
 
-            if (_sleepStartTime == -1)
+            if (_sleepStartTime < 0.0)
             {
-                if (SleepDebtPlugin.DebugLogging.Value)
-                {
-                    SleepDebtPlugin.Log.LogWarning(
-                        "[SleepDebt] Wake-up detected, but sleep start time was missing."
-                    );
+                SleepDebtPlugin.Log.LogWarning(
+                    "[SleepDebt/WAKE WARNING] Wake-up detected, but sleep start time was missing."
+                );
 
-                    return;
-                }
+                return;
             }
 
             double sleptClockHours = day == _sleepStartDay

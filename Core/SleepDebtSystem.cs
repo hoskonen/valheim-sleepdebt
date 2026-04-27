@@ -15,24 +15,8 @@ namespace SleepDebt.Core
         public static void OnSleepCompleted(double sleptClockHours, int wakeDay, float wakeFraction)
         {
             float idealSleepHours = SleepDebtPlugin.IdealSleepHours.Value;
-
             if (idealSleepHours <= 0f)
                 idealSleepHours = 8f;
-
-            float newRestCredit = (float)(sleptClockHours / idealSleepHours) * 100f;
-            newRestCredit = Mathf.Clamp(newRestCredit, 0f, 100f);
-
-            var quality = GetSleepQuality(sleptClockHours);
-
-            _restCredit = newRestCredit;
-
-            if (SleepDebtPlugin.DebugLogging.Value)
-            {
-                SleepDebtPlugin.Log.LogInfo(
-                    $"[SleepDebt] System → hours={sleptClockHours:F2}, " +
-                    $"rest={_restCredit:F1}, quality={quality}"
-                );
-            }
 
             float fullSleepAwakeHours = SleepDebtPlugin.FullSleepAwakeHours.Value;
             if (fullSleepAwakeHours <= 0f)
@@ -40,6 +24,13 @@ namespace SleepDebt.Core
 
             float sleepRatio = Mathf.Clamp01((float)(sleptClockHours / idealSleepHours));
 
+            float newRestCredit = sleepRatio * 100f;
+            var quality = GetSleepQuality(sleptClockHours);
+
+            FatigueStage previousStage = _currentFatigueStage;
+
+            _restCredit = newRestCredit;
+            _currentFatigueStage = FatigueStage.None;
             _hoursBeforeTired = sleepRatio * fullSleepAwakeHours;
             _wakeDay = wakeDay;
             _wakeFraction = wakeFraction;
@@ -55,9 +46,15 @@ namespace SleepDebt.Core
             }
 
             SleepDebtPlugin.Log.LogWarning(
-                $"🟡 [SleepDebt/FATIGUE PLAN] Tired would start after {_hoursBeforeTired:F2} awake hours " +
-                $"at day={predictedTiredDay}, fraction={predictedTiredFraction:F3}, " +
-                $"debugClock={FormatFractionAsClock(predictedTiredFraction)}."
+                $"🟢 [SleepDebt/SLEEP RESULT] " +
+                $"debug={SleepDebtPlugin.DebugLogging.Value}, " +
+                $"slept={sleptClockHours:F2}h, " +
+                $"quality={quality}, " +
+                $"rest={_restCredit:F1}, " +
+                $"stage={previousStage}->{_currentFatigueStage}, " +
+                $"tiredAfter={_hoursBeforeTired:F2}h, " +
+                $"tiredAt=day {predictedTiredDay} {FormatFractionAsClock(predictedTiredFraction)}, " +
+                $"fraction={predictedTiredFraction:F3}"
             );
         }
 
