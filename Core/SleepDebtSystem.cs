@@ -57,7 +57,8 @@ namespace SleepDebt.Core
 
             SleepDebtPlugin.Log.LogWarning(
                 $"🟡 [SleepDebt/FATIGUE PLAN] Tired would start after {_hoursBeforeTired:F2} awake hours " +
-                $"at day={predictedTiredDay}, fraction={predictedTiredFraction:F3}."
+                $"at day={predictedTiredDay}, fraction={predictedTiredFraction:F3}, " +
+                $"debugClock={FormatFractionAsClock(predictedTiredFraction)}."
             );
         }
 
@@ -89,6 +90,13 @@ namespace SleepDebt.Core
             if (awakeHours < 0)
                 awakeHours = 0;
 
+            SleepDebtPlugin.Log.LogInfo(
+                $"[SleepDebt/FATIGUE CHECK] awakeHours={awakeHours:F2}, " +
+                $"threshold={_hoursBeforeTired:F2}, " +
+                $"day={currentDay}, fraction={currentFraction:F3}, " +
+                $"debugClock={FormatFractionAsClock(currentFraction)}"
+            );
+
             if (awakeHours >= _hoursBeforeTired)
             {
                 _tiredWouldBeApplied = true;
@@ -99,6 +107,23 @@ namespace SleepDebt.Core
                     $"day={currentDay}, fraction={currentFraction:F3}"
                 );
             }
+        }
+
+        private static string FormatFractionAsClock(float fraction)
+        {
+            float normalized = fraction;
+
+            while (normalized < 0f)
+                normalized += 1f;
+
+            while (normalized >= 1f)
+                normalized -= 1f;
+
+            int totalMinutes = Mathf.FloorToInt(normalized * 24f * 60f);
+            int hours = totalMinutes / 60;
+            int minutes = totalMinutes % 60;
+
+            return $"{hours:00}:{minutes:00}";
         }
     }
 }
