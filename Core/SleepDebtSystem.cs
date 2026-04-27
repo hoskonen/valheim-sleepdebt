@@ -6,7 +6,7 @@ namespace SleepDebt.Core
     {
         private static float _restCredit = 100f;
         private static bool _hasActiveSleepResult;
-        private static bool _tiredWouldBeApplied;
+        private static FatigueStage _currentFatigueStage = FatigueStage.None;
 
         private static float _wakeFraction;
         private static int _wakeDay;
@@ -44,7 +44,6 @@ namespace SleepDebt.Core
             _wakeDay = wakeDay;
             _wakeFraction = wakeFraction;
             _hasActiveSleepResult = true;
-            _tiredWouldBeApplied = false;
 
             float predictedTiredFraction = _wakeFraction + (_hoursBeforeTired / 24f);
             int predictedTiredDay = _wakeDay;
@@ -73,7 +72,7 @@ namespace SleepDebt.Core
 
         public static void UpdateFatigueCheck()
         {
-            if (!_hasActiveSleepResult || _tiredWouldBeApplied)
+            if (!_hasActiveSleepResult)
                 return;
 
             if (Player.m_localPlayer == null || ZNet.instance == null || EnvMan.instance == null)
@@ -97,17 +96,12 @@ namespace SleepDebt.Core
                 $"debugClock={FormatFractionAsClock(currentFraction)}"
             );
 
-            if (awakeHours >= _hoursBeforeTired)
-            {
-                _tiredWouldBeApplied = true;
-
-                SleepDebtPlugin.Log.LogWarning(
-                    $"🟡 [SleepDebt/DEBUFF WOULD BE ADDED] Tired reached. " +
-                    $"awakeHours={awakeHours:F2}, threshold={_hoursBeforeTired:F2}, " +
-                    $"day={currentDay}, fraction={currentFraction:F3}"
-                );
-            }
-        }
+            if (_currentFatigueStage == FatigueStage.None &&
+            awakeHours >= _hoursBeforeTired)
+                    {
+                        SetFatigueStage(FatigueStage.Tired, awakeHours, currentDay, currentFraction);
+                    }
+                }
 
         private static string FormatFractionAsClock(float fraction)
         {
@@ -124,6 +118,25 @@ namespace SleepDebt.Core
             int minutes = totalMinutes % 60;
 
             return $"{hours:00}:{minutes:00}";
+        }
+
+        private static void SetFatigueStage(
+            FatigueStage newStage,
+            double awakeHours,
+            int day,
+            float fraction)
+                {
+                    if (_currentFatigueStage == newStage)
+                        return;
+
+                    _currentFatigueStage = newStage;
+
+                    SleepDebtPlugin.Log.LogWarning(
+                        $"🟡 [SleepDebt/STAGE] {newStage} reached. " +
+                        $"awakeHours={awakeHours:F2}, " +
+                        $"day={day}, fraction={fraction:F3}, " +
+                        $"debugClock={FormatFractionAsClock(fraction)}"
+                    );
         }
     }
 }

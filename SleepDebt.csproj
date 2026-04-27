@@ -56,6 +56,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\FatigueStage.cs" />
     <Compile Include="Core\SleepDebtSystem.cs" />
     <Compile Include="Core\SleepQuality.cs" />
     <Compile Include="Core\SleepResult.cs" />
