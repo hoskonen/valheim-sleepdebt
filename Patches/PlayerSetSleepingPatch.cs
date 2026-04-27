@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using BepInEx.Configuration;
+using HarmonyLib;
 using SleepDebt.Core;
 
 namespace SleepDebt.Patches
@@ -12,6 +13,9 @@ namespace SleepDebt.Patches
 
         private static void Postfix(Player __instance, bool sleep)
         {
+            if (!SleepDebtPlugin.EnableMod.Value)
+                return;
+
             if (__instance != Player.m_localPlayer)
                 return;
 
@@ -25,20 +29,27 @@ namespace SleepDebt.Patches
                 _sleepStartFraction = dayFraction;
                 _sleepStartDay = day;
 
-                SleepDebtPlugin.Log.LogInfo(
-                    $"[SleepDebt] Sleep started. " +
-                    $"time={currentTime:F1}, day={day}, fraction={dayFraction:F3}"
-                );
+                if (SleepDebtPlugin.DebugLogging.Value)
+                {
+                    SleepDebtPlugin.Log.LogInfo(
+                        $"[SleepDebt] Sleep started. " +
+                        $"time={currentTime:F1}, day={day}, fraction={dayFraction:F3}"
+                    );
+                }
 
                 return;
             }
 
-            if (_sleepStartTime < 0.0)
+            if (_sleepStartTime == -1)
             {
-                SleepDebtPlugin.Log.LogWarning(
-                    "[SleepDebt] Wake-up detected, but sleep start time was missing."
-                );
-                return;
+                if (SleepDebtPlugin.DebugLogging.Value)
+                {
+                    SleepDebtPlugin.Log.LogWarning(
+                        "[SleepDebt] Wake-up detected, but sleep start time was missing."
+                    );
+
+                    return;
+                }
             }
 
             double sleptClockHours = day == _sleepStartDay
@@ -47,7 +58,7 @@ namespace SleepDebt.Patches
 
             try
             {
-                SleepDebtSystem.OnSleepCompleted(sleptClockHours);
+                SleepDebtSystem.OnSleepCompleted(sleptClockHours, day, dayFraction);
             }
             finally
             {
